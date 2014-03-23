@@ -24,7 +24,7 @@ public class QuickFillCommands {
      * @param sender CommandSender player who sends the command
      * @throws CommandException thrown if sender is not a Player, or if the chest is not empty and override is disabled
      */
-    @Command(aliases = {"hotbar", "hb", "row"}, desc = "Fills the chest the sender is looking at with the senders hot bar", flags = "o", min = 0, max = 0)
+    @Command(aliases = {"hotbar", "hb", "row"}, desc = "Fills the chest the sender is looking at with the senders hot bar", flags = "oa", min = 0, max = 0)
     public static void hotbar(final CommandContext args, CommandSender sender) throws CommandException {
         Player player = CommandsHelper.getPlayer(sender);
 
@@ -52,7 +52,15 @@ public class QuickFillCommands {
             }
 
             chest.getBlockInventory().clear();
-            chest.getBlockInventory().setContents(playerHotBar);
+            if(args.hasFlag('a'))
+                for (int hor = 0; hor < chest.getBlockInventory().getSize()/9; hor++) {
+                for (int ver = 0; ver < 9; ver++) {
+                    chest.getBlockInventory().setItem(hor * 9 + ver, playerHotBar[ver]);
+                }
+            }
+            else
+                chest.getBlockInventory().setContents(playerHotBar);
+
             player.sendMessage(ChatColor.GREEN + "Successfully replaced chests contents with your hotbar!");
         } else {
             Log.debug("Unable to perform command, " + player.getName() + " was looking at " + b.getType());
