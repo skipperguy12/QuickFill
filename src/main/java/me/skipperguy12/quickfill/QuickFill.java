@@ -6,7 +6,10 @@ import me.skipperguy12.quickfill.commands.QuickFillParentCommand;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
 
 /**
  * Main class (Bukkit JavaPlugin)
@@ -27,7 +30,18 @@ public class QuickFill extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+
+        // setup the sk89q command framework
         this.setupCommands();
+
+        // save the default config file and set variables to Config.java
+        saveDefaultConfig();
+
+        Config.configFile = new File(getDataFolder(), "config.yml");
+        Config.config = YamlConfiguration.loadConfiguration(Config.configFile);
+
+        // set debugging to the value in the config
+        Log.setDebugging(Config.General.debugging);
     }
 
     /**
