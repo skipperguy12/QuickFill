@@ -5,6 +5,7 @@ import com.sk89q.minecraft.util.commands.Command;
 import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandException;
 import me.skipperguy12.quickfill.Log;
+import me.skipperguy12.quickfill.utils.ChestUtils;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -20,7 +21,7 @@ public class QuickFillCommands {
     /**
      * Fills chest with a Players hotbar
      *
-     * @param args
+     * @param args   parameters
      * @param sender CommandSender player who sends the command
      * @throws CommandException thrown if sender is not a Player, or if the chest is not empty and override is disabled
      */
@@ -47,17 +48,17 @@ public class QuickFillCommands {
             Chest chest = (Chest) b.getState();
             Log.debug("Chest contents length: " + chest.getBlockInventory().getContents().length);
             Log.debug("Is chest empty? " + (chest.getBlockInventory().getContents().length == 0 ? "yes" : "no"));
-            if (chest.getBlockInventory().getContents().length != 0 && args.hasFlag('o') == false) {
+            if (!ChestUtils.isEmpty(chest) && args.hasFlag('o') == false) {
                 throw new CommandException("This chest is not empty! If you wish to override the chest (the chest WILL be CLEARED), execute this command with the -o flag.");
             }
 
             chest.getBlockInventory().clear();
-            if(args.hasFlag('a'))
-                for (int hor = 0; hor < chest.getBlockInventory().getSize()/9; hor++) {
-                for (int ver = 0; ver < 9; ver++) {
-                    chest.getBlockInventory().setItem(hor * 9 + ver, playerHotBar[ver]);
+            if (args.hasFlag('a'))
+                for (int hor = 0; hor < chest.getBlockInventory().getSize() / 9; hor++) {
+                    for (int ver = 0; ver < 9; ver++) {
+                        chest.getBlockInventory().setItem(hor * 9 + ver, playerHotBar[ver]);
+                    }
                 }
-            }
             else
                 chest.getBlockInventory().setContents(playerHotBar);
 
@@ -71,7 +72,7 @@ public class QuickFillCommands {
     /**
      * Fills chest with a Players inventory
      *
-     * @param args
+     * @param args   parameters
      * @param sender CommandSender player who sends the command
      * @throws CommandException thrown if sender is not a Player, or if the chest is not empty and override is disabled
      */
@@ -87,7 +88,7 @@ public class QuickFillCommands {
             Chest chest = (Chest) b.getState();
             Log.debug("Chest contents length: " + chest.getBlockInventory().getContents().length);
             Log.debug("Is chest empty? " + (chest.getBlockInventory().getContents().length == 0 ? "yes" : "no"));
-            if (chest.getBlockInventory().getContents().length != 0 && args.hasFlag('o') == false) {
+            if (!ChestUtils.isEmpty(chest) && args.hasFlag('o') == false) {
                 throw new CommandException("This chest is not empty! If you wish to override the chest (the chest WILL be CLEARED), execute this command with the -o flag.");
             }
 
@@ -103,4 +104,84 @@ public class QuickFillCommands {
             throw new CommandException("You must be looking at a chest! Currently you're looking at " + b.getType());
         }
     }
+
+    /**
+     * Fills chest with item in Players hand
+     *
+     * @param args   parameters
+     * @param sender CommandSender player who sends the command
+     * @throws CommandException thrown if sender is not a Player, or if the chest is not empty and override is disabled
+     */
+    @Command(aliases = {"hand", "h"}, desc = "Fills the chest the sender is looking at with the item in hand", flags = "o", min = 0, max = 0)
+    public static void hand(final CommandContext args, CommandSender sender) throws CommandException {
+        Player player = CommandsHelper.getPlayer(sender);
+        ItemStack hand = player.getItemInHand();
+
+        // Gets chest and replaces if empty (or override enabled)
+        Block b = player.getTargetBlock(null, 100);
+        if (b.getType() == Material.CHEST) {
+            Chest chest = (Chest) b.getState();
+            Log.debug("Chest contents length: " + chest.getBlockInventory().getContents().length);
+            Log.debug("Is chest empty? " + (chest.getBlockInventory().getContents().length == 0 ? "yes" : "no"));
+            if (!ChestUtils.isEmpty(chest) && args.hasFlag('o') == false) {
+                throw new CommandException("This chest is not empty! If you wish to override the chest (the chest WILL be CLEARED), execute this command with the -o flag.");
+            }
+
+            chest.getBlockInventory().clear();
+
+            for (int i = 0; i < chest.getBlockInventory().getSize(); i++) {
+                Log.debug("Setting slot " + i + " in chest to " + hand);
+                chest.getBlockInventory().setItem(i, hand);
+            }
+            player.sendMessage(ChatColor.GREEN + "Successfully replaced chests contents with the item in hand (" + hand.getType() + ")!");
+        } else {
+            Log.debug("Unable to perform command, " + player.getName() + " was looking at " + b.getType());
+            throw new CommandException("You must be looking at a chest! Currently you're looking at " + b.getType());
+        }
+    }
+
+    /**
+     * Fills chest with item specified
+     *
+     * @param args   parameters
+     * @param sender CommandSender player who sends the command
+     * @throws CommandException thrown if sender is not a Player, or if the chest is not empty and override is disabled
+     */
+    @Command(aliases = {"item", "i"}, desc = "Fills the chest the sender is looking at with the item name or id specified", flags = "o", min = 1, max = 1)
+    public static void item(final CommandContext args, CommandSender sender) throws CommandException {
+        Player player = CommandsHelper.getPlayer(sender);
+        Material material = Material.matchMaterial(args.getString(0));
+
+        Log.debug("Material matched: " + material);
+
+
+        if (material == null)
+            throw new CommandException("Unable to identify material!");
+        ItemStack fillItem = new ItemStack(material, material.getMaxStackSize());
+
+
+        // Gets chest and replaces if empty (or override enabled)
+        Block b = player.getTargetBlock(null, 100);
+        if (b.getType() == Material.CHEST) {
+            Chest chest = (Chest) b.getState();
+
+            Log.debug("Is chest empty? " + (ChestUtils.isEmpty(chest) ? "yes" : "no"));
+            if (!ChestUtils.isEmpty(chest) && args.hasFlag('o') == false) {
+                throw new CommandException("This chest is not empty! If you wish to override the chest (the chest WILL be CLEARED), execute this command with the -o flag.");
+            }
+
+            chest.getBlockInventory().clear();
+
+            for (int i = 0; i < chest.getBlockInventory().getSize(); i++) {
+                Log.debug("Setting slot " + i + " in chest to " + fillItem);
+                chest.getBlockInventory().setItem(i, fillItem);
+            }
+            player.sendMessage(ChatColor.GREEN + "Successfully replaced chests contents with the item specified (" + fillItem.getType() + ")!");
+        } else {
+            Log.debug("Unable to perform command, " + player.getName() + " was looking at " + b.getType());
+            throw new CommandException("You must be looking at a chest! Currently you're looking at " + b.getType());
+        }
+
+    }
+
 }
