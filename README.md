@@ -14,3 +14,11 @@ Aliases: hb or row
 * /quickfill inventory - Fills the chest the sender is looking at with his inventory
 
 Aliases: inv
+
+* /quickfill hand - Fills the chest the sender is looking at with item in his hand
+
+Aliases: h
+
+* /quickfill item <name or id> - Fills the chest the sender is looking at with the max stack size of the item specified
+
+Aliases: i
